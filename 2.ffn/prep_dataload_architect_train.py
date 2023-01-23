@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import torch
@@ -9,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 
 # loading data using pandas
-directory = r'C:\Users\file_path'
+directory = r'C:\FILE_PATH'
 df = pd.read_csv(directory + r'\diabetes.csv')
 df.head()
 
@@ -73,6 +74,7 @@ for (x,y) in train_loader:
 
 # build torch model with input and output features
 # 7 -> 5 -> 4 -> 3 -> 1
+# hiddens are Tanh final Sigmoid w BCELoss
 class Model(nn.Module):
     def __init__(self, input_features, output_feature):
         super(Model, self).__init__()
@@ -83,3 +85,47 @@ class Model(nn.Module):
         self.layer2 = nn.Linear(in_features=5, out_features=4)
         self.layer3 = nn.Linear(in_features=4, out_features=3)
         self.layer4 = nn.Linear(in_features=3, out_features=output_feature)
+        self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
+
+    # passing data through forward
+    def forward(self, X):
+        out1 = self.layer1(self.tanh(X))
+        out2 = self.layer2(self.tanh(out1))
+        out3 = self.layer3(self.tanh(out2))
+        out4 = self.layer4(self.sigmoid(out3))
+
+        return out4
+
+# create network
+model_network = Model(X.shape[1], 1)
+# define and create loss with loss averaging over batch
+loss_function = torch.nn.BCEWithLogitsLoss(size_average=True)
+# create model optimizer
+optimizer = torch.optim.SGD(model_network.parameters(), lr=0.1, momentum=0.9)
+
+#########
+# Train #
+#########
+epochs = 209
+for epoch in range(epochs):
+    for inputs, labels in train_loader:
+        # Clear the gradient buffer (we don't want to accumulate gradients)
+        optimizer.zero_grad()
+        # Feed Forward
+        output = model_network(inputs.float())
+        # Loss Calculation
+        loss = loss_function(output, labels.float())
+        
+        # Backpropagation 
+        loss.backward()
+        # Weight Update: w <-- w - lr * gradient
+        optimizer.step()
+
+     #Accuracy
+    # Since we are using a sigmoid, we will need to perform some thresholding
+    output = (output>0.5).float()
+    # Accuracy: (output == labels).float().sum() / output.shape[0]
+    accuracy = (output == labels).float().mean()
+    # Print statistics 
+    print("Epoch {}/{}, Loss: {:.3f}, Accuracy: {:.3f}".format(epoch+1,epochs, loss, accuracy))
