@@ -130,6 +130,9 @@ print((t1 == t2).sum())
 ###################
 # TEST the network
 ###################
+# no_grad():
+    # It means any tensor with gradient currently attached with the current 
+    # computational graph is now detached from the current graph (DO NOT updte, weights)
 with torch.no_grad():
     correct = 0
     for images, labels in test_loader:
