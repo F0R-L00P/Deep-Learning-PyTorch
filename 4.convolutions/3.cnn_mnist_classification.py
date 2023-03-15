@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
@@ -71,8 +72,11 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
                                            batch_size=batch_size, 
                                            shuffle=True
                                            )
-test_loader = torch._utils.data.DataLoader(test_dataset,
+test_loader = torch.utils.data.DataLoader(test_dataset,
                                            batch_size=batch_size,
                                            shuffle=False
                                            )
 
+# lets visualize the loader
+# as batch is 64, instances are expected to be 60000/64=
+print(f'Train Loader: {len(train_loader)} | Test Loader: {len(test_loader)}')
