@@ -25,8 +25,8 @@ std = 0.3081
 
 
 transform = transforms.Compose([
-    transforms.RandomRotation(degrees=20), # randomly rotate the images by up to 20 degrees
-    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
+#    transforms.RandomRotation(degrees=20), # randomly rotate the images by up to 20 degrees
+#    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
     transforms.ToTensor(),                 # convert images to tensors
     transforms.Normalize((mean,), (std,))  # normalize the tensor with mean and standard deviation
                                 ])
@@ -68,7 +68,7 @@ print(label)
 
 # setup dataloader for training process
 # Create the DataLoader with batch size 64, shuffling
-batch_size = 64
+batch_size = 100
 train_loader = torch.utils.data.DataLoader(train_dataset, 
                                            batch_size=batch_size, 
                                            shuffle=True
@@ -327,7 +327,6 @@ def plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy):
 
 
 plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy)
-
 ##########################################################
 ##########################################################
 ##########################################################
@@ -355,3 +354,15 @@ a = torch.tensor([1, 2, 3])
 b = torch.tensor([2, 2, 4])
 a==b
 (a==b).sum().item()
+
+##########################################################
+#####################TEST MODEL###########################
+##########################################################
+# resize a tensor to 4D tensor to pass via the model 
+img = test_dataset[30][0].resize_((1, 1, 28, 28))
+label = test_dataset[30][1]
+
+output = model(img)
+_, predicted = torch.max(output,1)
+print("Prediction is: {}".format(predicted.item()))
+print("Actual is: {}".format(label))
