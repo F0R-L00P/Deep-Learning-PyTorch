@@ -155,14 +155,18 @@ model = CNN()
 
 # Move model to device
 model.to(device)
-
 # check model weight matrix from each layer
 x = torch.randn(1, 1, 28, 28)
 model(x)
-
-model
 # check layer shapes and weight
 model.conv1[0].weight.shape
+
+# Print model's state_dict
+# provides weights and bias at each stage
+print("Model's state_dict:")
+for param_tensor in model.state_dict():
+    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+
 # setup optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 ##########################################################
@@ -172,7 +176,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 iteration = 0
 correct = 0
 
-for i,(inputs,labels) in enumerate (train_loader):
+for i, (inputs,labels) in enumerate(train_loader):
         
     print("For one iteration, this is what happens:")
     print("Input Shape:",inputs.shape)
@@ -366,3 +370,12 @@ output = model(img)
 _, predicted = torch.max(output,1)
 print("Prediction is: {}".format(predicted.item()))
 print("Actual is: {}".format(label))
+
+##########################################################
+#######################SAVE MODEL#########################
+##########################################################
+# save the trained model weights and bias for transfer using:
+torch.save(model.state_dict(), 'cnn_model_weights.pth')
+
+# save the model architecture, including its weights and bias
+torch.save(model, 'cnn_model.pth')
