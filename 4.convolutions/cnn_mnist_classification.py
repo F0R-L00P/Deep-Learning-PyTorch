@@ -146,150 +146,124 @@ class CNN(nn.Module):
         x = self.fc2(x)  # fully connected layer
         return x
 
-
-# setup cuda process
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-# Create the model and optimizer
-model = CNN()
-
-# Move model to device
-model.to(device)
-# check model weight matrix from each layer
-x = torch.randn(1, 1, 28, 28)
-model(x)
-# check layer shapes and weight
-model.conv1[0].weight.shape
-
-# Print model's state_dict
-# provides weights and bias at each stage
-print("Model's state_dict:")
-for param_tensor in model.state_dict():
-    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-
-# setup optimizer
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-##########################################################
-##########################################################
-##########################################################
-#Understand what's happening before training
-iteration = 0
-correct = 0
-
-for i, (inputs,labels) in enumerate(train_loader):
+if __name__ == '__main__':
         
-    print("For one iteration, this is what happens:")
-    print("Input Shape:",inputs.shape)
-    print("Labels Shape:",labels.shape)
-    output = model(inputs)
-    print("Outputs Shape",output.shape)
-    _, predicted = torch.max(output, 1)
-    print("Predicted Shape",predicted.shape)
-    print("Predicted Tensor:")
-    print(predicted) # provide prediction/batch -> 64 predictions
-    correct += (predicted == labels).sum()
-    break
 
-print(correct)
-##########################################################
-##############simplified model training###################
-##########################################################
-# # Train the model
-# num_epochs = 10
-# for epoch in range(num_epochs):
-#     # Set the model to training mode
-#     model.train()
-#     # Iterate over the batches of training data
-#     for images, labels in tqdm(train_loader):
-#         # Zero out the gradients after each back-prop
-#         optimizer.zero_grad()
-#         # Forward pass
-#         output = model(images)
-#         # Compute the loss  
-#         loss = nn.CrossEntropyLoss()(output, labels)
-#         print(f'Training Loss: {loss}')
-#         # Backward pass
-#         loss.backward()
-#         # Update the weights
-#         optimizer.step()
+    # setup cuda process
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#     # Set the model to evaluation mode
-#     # close train and back-prop
-#     model.eval()
-#     # Compute the accuracy on the test set
-#     total_correct = 0
-#     total_samples = 0
-#     # don't update gradient
-#     with torch.no_grad():
-#         for images, labels in test_loader:
-#             output = model(images)
-#             _, predicted = torch.max(output, dim=1)
-#             total_correct += (predicted == labels).sum().item() #item extracts value from tensor
-#             total_samples += labels.size(0)
-#     accuracy = total_correct / total_samples
+    # Create the model and optimizer
+    model = CNN()
 
-#     # Print the epoch number and test accuracy (4 decimal)
-#     print(f"Epoch [{epoch+1}/{num_epochs}], Test Accuracy: {accuracy:.4f}")
+    # Move model to device
+    model.to(device)
+    # check model weight matrix from each layer
+    x = torch.randn(1, 1, 28, 28)
+    model(x)
+    # check layer shapes and weight
+    model.conv1[0].weight.shape
 
-##########################################################
-################detailed model training###################
-##########################################################
-# initialize lists to store loss and accuracy
-train_loss = []
-test_loss = []
-train_accuracy = []
-test_accuracy = []
+    # Print model's state_dict
+    # provides weights and bias at each stage
+    print("Model's state_dict:")
+    for param_tensor in model.state_dict():
+        print(param_tensor, "\t", model.state_dict()[param_tensor].size())
 
-num_epochs = 10
-# train the model
-for epoch in range(num_epochs):
-    # training
-    model.train()
-    running_loss = 0.0
+    # setup optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    #Understand what's happening before training
+    iteration = 0
     correct = 0
-    total = 0
-    for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
-        # move data and target to device
-        data, target = data.to(device), target.to(device)
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
+    for i, (inputs,labels) in enumerate(train_loader):
+            
+        print("For one iteration, this is what happens:")
+        print("Input Shape:",inputs.shape)
+        print("Labels Shape:",labels.shape)
+        output = model(inputs)
+        print("Outputs Shape",output.shape)
+        _, predicted = torch.max(output, 1)
+        print("Predicted Shape",predicted.shape)
+        print("Predicted Tensor:")
+        print(predicted) # provide prediction/batch -> 64 predictions
+        correct += (predicted == labels).sum()
+        break
 
-        # forward + backward + optimize
-        outputs = model(data)
-        loss = nn.CrossEntropyLoss()(outputs, target)
-        loss.backward()
-        optimizer.step()
+    print(correct)
+    ##########################################################
+    ##############simplified model training###################
+    ##########################################################
+    # # Train the model
+    # num_epochs = 10
+    # for epoch in range(num_epochs):
+    #     # Set the model to training mode
+    #     model.train()
+    #     # Iterate over the batches of training data
+    #     for images, labels in tqdm(train_loader):
+    #         # Zero out the gradients after each back-prop
+    #         optimizer.zero_grad()
+    #         # Forward pass
+    #         output = model(images)
+    #         # Compute the loss  
+    #         loss = nn.CrossEntropyLoss()(output, labels)
+    #         print(f'Training Loss: {loss}')
+    #         # Backward pass
+    #         loss.backward()
+    #         # Update the weights
+    #         optimizer.step()
 
-        # calculate training accuracy
-        _, predicted = torch.max(outputs.data, 1)
-        total += target.size(0)
-        correct += (predicted == target).sum().item()
+    #     # Set the model to evaluation mode
+    #     # close train and back-prop
+    #     model.eval()
+    #     # Compute the accuracy on the test set
+    #     total_correct = 0
+    #     total_samples = 0
+    #     # don't update gradient
+    #     with torch.no_grad():
+    #         for images, labels in test_loader:
+    #             output = model(images)
+    #             _, predicted = torch.max(output, dim=1)
+    #             total_correct += (predicted == labels).sum().item() #item extracts value from tensor
+    #             total_samples += labels.size(0)
+    #     accuracy = total_correct / total_samples
 
-        # add current batch loss to running loss
-        running_loss += loss.item()
+    #     # Print the epoch number and test accuracy (4 decimal)
+    #     print(f"Epoch [{epoch+1}/{num_epochs}], Test Accuracy: {accuracy:.4f}")
 
-    # calculate average training loss and accuracy for current epoch
-    avg_train_loss = running_loss / len(train_loader)
-    avg_train_accuracy = 100 * correct / total
-    train_loss.append(avg_train_loss)
-    train_accuracy.append(avg_train_accuracy)
-    
-    # testing
-    model.eval()
-    running_loss = 0.0
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(test_loader):
+    ##########################################################
+    ################detailed model training###################
+    ##########################################################
+    # initialize lists to store loss and accuracy
+    train_loss = []
+    test_loss = []
+    train_accuracy = []
+    test_accuracy = []
+
+    num_epochs = 10
+    # train the model
+    for epoch in range(num_epochs):
+        # training
+        model.train()
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
             # move data and target to device
             data, target = data.to(device), target.to(device)
 
-            # forward pass
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
             outputs = model(data)
             loss = nn.CrossEntropyLoss()(outputs, target)
+            loss.backward()
+            optimizer.step()
 
-            # calculate test accuracy
+            # calculate training accuracy
             _, predicted = torch.max(outputs.data, 1)
             total += target.size(0)
             correct += (predicted == target).sum().item()
@@ -297,85 +271,114 @@ for epoch in range(num_epochs):
             # add current batch loss to running loss
             running_loss += loss.item()
 
-    # calculate average test loss and accuracy for current epoch
-    avg_test_loss = running_loss / len(test_loader)
-    avg_test_accuracy = 100 * correct / total
-    test_loss.append(avg_test_loss)
-    test_accuracy.append(avg_test_accuracy)
-
-    # print training and testing loss and accuracy
-    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.2f}%, Test Loss: {avg_test_loss:.4f}, Test Accuracy: {avg_test_accuracy:.2f}%")
-##########################################################
-##########################################################
-##########################################################
-# visualizing plot dimensions
-def plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy):
-    fig, axs = plt.subplots(1, 2, figsize=(12, 8))
-    
-    axs[0].plot(train_loss, '-b', label='Training loss')
-    axs[0].plot(test_loss, '-r', label='Testing loss')
-    axs[0].set_xlabel('Epoch')
-    axs[0].set_ylabel('Loss')
-    axs[0].legend(loc='upper right')
-    axs[0].set_title('Training and Testing Loss')
-    
-    axs[1].plot(train_accuracy, '-b', label='Training accuracy')
-    axs[1].plot(test_accuracy, '-r', label='Testing accuracy')
-    axs[1].set_xlabel('Epoch')
-    axs[1].set_ylabel('Accuracy')
-    axs[1].legend(loc='lower right')
-    axs[1].set_title('Training and Testing Accuracy')
-    
-    plt.tight_layout()
-    plt.show()
-
-
-plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy)
-##########################################################
-##########################################################
-##########################################################
-#Understand what's happening after training
-iteration = 0
-correct = 0
-
-for i,(inputs,labels) in enumerate (train_loader):
+        # calculate average training loss and accuracy for current epoch
+        avg_train_loss = running_loss / len(train_loader)
+        avg_train_accuracy = 100 * correct / total
+        train_loss.append(avg_train_loss)
+        train_accuracy.append(avg_train_accuracy)
         
-    print("For one iteration, this is what happens:")
-    print("Input Shape:",inputs.shape)
-    print("Labels Shape:",labels.shape)
-    output = model(inputs)
-    print("Outputs Shape",output.shape)
-    _, predicted = torch.max(output, 1)
-    print("Predicted Shape",predicted.shape)
-    print("Predicted Tensor:")
-    print(predicted) # provide prediction/batch -> 64 predictions
-    correct += (predicted == labels).sum()
-    break
-print(correct)
-# model can get 61 out of 64 images correct
+        # testing
+        model.eval()
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for batch_idx, (data, target) in enumerate(test_loader):
+                # move data and target to device
+                data, target = data.to(device), target.to(device)
 
-a = torch.tensor([1, 2, 3])
-b = torch.tensor([2, 2, 4])
-a==b
-(a==b).sum().item()
+                # forward pass
+                outputs = model(data)
+                loss = nn.CrossEntropyLoss()(outputs, target)
 
-##########################################################
-#####################TEST MODEL###########################
-##########################################################
-# resize a tensor to 4D tensor to pass via the model 
-img = test_dataset[30][0].resize_((1, 1, 28, 28))
-label = test_dataset[30][1]
+                # calculate test accuracy
+                _, predicted = torch.max(outputs.data, 1)
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
 
-output = model(img)
-_, predicted = torch.max(output,1)
-print("Prediction is: {}".format(predicted.item()))
-print("Actual is: {}".format(label))
+                # add current batch loss to running loss
+                running_loss += loss.item()
 
-##########################################################
-#######################SAVE MODEL#########################
-##########################################################
-# save the trained model weights and bias for transfer using:
-torch.save(model.state_dict(), 'cnn_model_weights.pth')
+        # calculate average test loss and accuracy for current epoch
+        avg_test_loss = running_loss / len(test_loader)
+        avg_test_accuracy = 100 * correct / total
+        test_loss.append(avg_test_loss)
+        test_accuracy.append(avg_test_accuracy)
 
-# save the model architecture, including its weights and bias
-torch.save(model, 'cnn_model.pth')
+        # print training and testing loss and accuracy
+        print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.2f}%, Test Loss: {avg_test_loss:.4f}, Test Accuracy: {avg_test_accuracy:.2f}%")
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    # visualizing plot dimensions
+    def plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy):
+        fig, axs = plt.subplots(1, 2, figsize=(12, 8))
+        
+        axs[0].plot(train_loss, '-b', label='Training loss')
+        axs[0].plot(test_loss, '-r', label='Testing loss')
+        axs[0].set_xlabel('Epoch')
+        axs[0].set_ylabel('Loss')
+        axs[0].legend(loc='upper right')
+        axs[0].set_title('Training and Testing Loss')
+        
+        axs[1].plot(train_accuracy, '-b', label='Training accuracy')
+        axs[1].plot(test_accuracy, '-r', label='Testing accuracy')
+        axs[1].set_xlabel('Epoch')
+        axs[1].set_ylabel('Accuracy')
+        axs[1].legend(loc='lower right')
+        axs[1].set_title('Training and Testing Accuracy')
+        
+        plt.tight_layout()
+        plt.show()
+
+
+    plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy)
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    #Understand what's happening after training
+    iteration = 0
+    correct = 0
+
+    for i,(inputs,labels) in enumerate (train_loader):
+            
+        print("For one iteration, this is what happens:")
+        print("Input Shape:",inputs.shape)
+        print("Labels Shape:",labels.shape)
+        output = model(inputs)
+        print("Outputs Shape",output.shape)
+        _, predicted = torch.max(output, 1)
+        print("Predicted Shape",predicted.shape)
+        print("Predicted Tensor:")
+        print(predicted) # provide prediction/batch -> 64 predictions
+        correct += (predicted == labels).sum()
+        break
+    print(correct)
+    # model can get 61 out of 64 images correct
+
+    a = torch.tensor([1, 2, 3])
+    b = torch.tensor([2, 2, 4])
+    a==b
+    (a==b).sum().item()
+
+    ##########################################################
+    #####################TEST MODEL###########################
+    ##########################################################
+    # resize a tensor to 4D tensor to pass via the model 
+    img = test_dataset[30][0].resize_((1, 1, 28, 28))
+    label = test_dataset[30][1]
+
+    output = model(img)
+    _, predicted = torch.max(output,1)
+    print("Prediction is: {}".format(predicted.item()))
+    print("Actual is: {}".format(label))
+
+    ##########################################################
+    #######################SAVE MODEL#########################
+    ##########################################################
+    # save the trained model weights and bias for transfer using:
+    torch.save(model.state_dict(), 'cnn_model_weights.pth')
+
+    # save the model architecture, including its weights and bias
+    torch.save(model, 'cnn_model.pth')
+
