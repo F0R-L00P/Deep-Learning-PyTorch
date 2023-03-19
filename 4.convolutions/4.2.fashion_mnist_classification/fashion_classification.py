@@ -4,6 +4,7 @@ import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
@@ -25,8 +26,9 @@ std = 0.3081
 
 
 transform = transforms.Compose([
-#    transforms.RandomRotation(degrees=20), # randomly rotate the images by up to 20 degrees
-#    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
+    transforms.RandomCrop(size=14),
+    transforms.RandomRotation(degrees=180), # randomly rotate the images by up to 20 degrees
+    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
     transforms.ToTensor(),                 # convert images to tensors
     transforms.Normalize((mean,), (std,))  # normalize the tensor with mean and standard deviation
                                 ])
@@ -58,7 +60,7 @@ image, label = train_dataset[1]
 
 # must convert 2D tensor (1, 28, 28) colour_channel, dim, dim
 # to 28x28 image removing colour
-image = image.numpy()[0]
+image = image.np()[0]
 # Display the image and label
 plt.imshow(image, cmap='gray')
 plt.title(f"Label: {label}")
@@ -196,8 +198,6 @@ print(correct)
 ##########################################################
 ##################### model training######################
 ##########################################################
-import numpy as np
-
 # initialize lists to store loss and accuracy
 train_loss = []
 test_loss = []
