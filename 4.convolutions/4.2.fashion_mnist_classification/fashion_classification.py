@@ -27,7 +27,7 @@ std = 0.3081
 
 transform = transforms.Compose([
     transforms.RandomCrop(size=14),
-    transforms.RandomRotation(degrees=180), # randomly rotate the images by up to 20 degrees
+    transforms.RandomRotation(degrees=90), # randomly rotate the images by up to 20 degrees
     transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
     transforms.ToTensor(),                 # convert images to tensors
     transforms.Normalize((mean,), (std,))  # normalize the tensor with mean and standard deviation
@@ -204,8 +204,8 @@ test_loss = []
 train_accuracy = []
 test_accuracy = []
 
-num_epochs = 10
-patience = 3  # number of epochs to wait before early stopping
+num_epochs = 20
+patience = 4  # number of epochs to wait before early stopping
 best_test_loss = np.inf
 best_model_params = None
 early_stopping_counter = 0
@@ -289,35 +289,6 @@ for epoch in range(num_epochs):
     # check for early stopping before starting the next epoch
     if early_stopping_counter >= patience:
         break
-
-# load the best model parameters and evaluate on the test set
-model.load_state_dict(best_model_params)
-model.eval()
-running_loss = 0.0
-correct = 0
-total = 0
-with torch.no_grad():
-    for batch_idx, (data, target) in enumerate(test_loader):
-        # move data and target to device
-        data, target = data.to(device), target.to(device)
-
-        # forward pass
-        outputs = model(data)
-        loss = nn.CrossEntropyLoss()(outputs, target)
-
-        # calculate test accuracy
-        _, predicted = torch.max(outputs.data, 1)
-        total += target.size(0)
-        correct += (predicted == target).sum().item()
-
-        # add current batch loss to running loss
-        running_loss += loss.item()
-
-    # calculate average test loss and accuracy
-    avg_test_loss = running_loss / len(test_loader)
-    avg_test_accuracy = 100 * correct / total
-    print(f"Test Loss: {avg_test_loss:.4f}, Test Accuracy: {avg_test_accuracy:.2f}%")
-
 
 ##########################################################
 ##########################################################
