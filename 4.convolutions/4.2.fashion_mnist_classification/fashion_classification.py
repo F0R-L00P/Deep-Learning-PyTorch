@@ -332,7 +332,8 @@ plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy)
 ##########################################################
 ##########################################################
 ##########################################################
-#Understand what's happening after training
+# Understand what's happening after training
+# manual check for model accuracy, compare results to first output
 iteration = 0
 correct = 0
 
@@ -350,12 +351,6 @@ for i,(inputs,labels) in enumerate (train_loader):
     correct += (predicted == labels).sum()
     break
 print(correct)
-# model can get 61 out of 64 images correct
-
-a = torch.tensor([1, 2, 3])
-b = torch.tensor([2, 2, 4])
-a==b
-(a==b).sum().item()
 
 ##########################################################
 #####################TEST MODEL###########################
