@@ -4,6 +4,7 @@ import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+import random
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -12,8 +13,8 @@ import matplotlib.pyplot as plt
 data_path = r'C:\Users\behna\OneDrive\Documents\GitHub\Pytorch\4.convolutions\4.2.fashion_mnist_classification\fashion_dataset'
 
 # pre-computed mean and std of mnist
-mean = 0.1307
-std = 0.3081
+mean = 0.2860
+std = 0.3530
 
 # transformation of data
 # Transformations can include data augmentation techniques such as
@@ -24,11 +25,10 @@ std = 0.3081
 # NORMALIZATION PROCESS
 # input[channel] = (input[channel] - mean(channel)) / standard deviation
 
-
 transform = transforms.Compose([
-    transforms.RandomCrop(size=14),
-    transforms.RandomRotation(degrees=90), # randomly rotate the images by up to 20 degrees
-    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
+#    transforms.RandomCrop(size=14),
+#    transforms.RandomRotation(degrees=90), # randomly rotate the images by up to 20 degrees
+#    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
     transforms.ToTensor(),                 # convert images to tensors
     transforms.Normalize((mean,), (std,))  # normalize the tensor with mean and standard deviation
                                 ])
@@ -41,6 +41,17 @@ train_dataset = datasets.FashionMNIST(
                                         download=True, 
                                         transform=transform
                                     )
+
+# # Compute the mean and standard deviation of the dataset
+# train_loader = torch.utils.data.DataLoader(train_dataset, 
+#                                            batch_size=len(train_dataset)
+#                                            )
+# data = next(iter(train_loader))
+# mean, std = data[0].mean(), data[0].std()
+
+# print("Mean:", mean)
+# print("Std:", std)
+
 test_dataset = datasets.FashionMNIST(
                                         root=data_path, 
                                         train=False, 
@@ -60,7 +71,7 @@ image, label = train_dataset[1]
 
 # must convert 2D tensor (1, 28, 28) colour_channel, dim, dim
 # to 28x28 image removing colour
-image = image.np()[0]
+image = image.numpy()[0]
 # Display the image and label
 plt.imshow(image, cmap='gray')
 plt.title(f"Label: {label}")
@@ -69,6 +80,7 @@ plt.show()
 
 # check corresponding label 
 print(f'Label: {label}')
+
 
 # setup dataloader for training process
 # Create the DataLoader with batch size 64, shuffling
@@ -81,6 +93,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset,
                                            batch_size=batch_size,
                                            shuffle=False
                                            )
+
 
 # lets visualize the loader
 # as batch is 64, instances are expected to be 60000\64 & 10000\64
@@ -204,7 +217,7 @@ test_loss = []
 train_accuracy = []
 test_accuracy = []
 
-num_epochs = 20
+num_epochs = 10
 patience = 4  # number of epochs to wait before early stopping
 best_test_loss = np.inf
 best_model_params = None
@@ -348,19 +361,27 @@ a==b
 #####################TEST MODEL###########################
 ##########################################################
 # resize a tensor to 4D tensor to pass via the model 
-img = test_dataset[30][0].resize_((1, 1, 28, 28))
-label = test_dataset[30][1]
+# Choose a random set of examples from the test dataset
+indices = random.sample(range(len(test_dataset)), 10)
 
-output = model(img)
-_, predicted = torch.max(output,1)
-print("Prediction is: {}".format(predicted.item()))
-print("Actual is: {}".format(label))
+for i in indices:
+    # Get the image and label
+    img = test_dataset[i][0].resize_((1, 1, 28, 28))
+    label = test_dataset[i][1]
+
+    # Make the prediction
+    output = model(img)
+    _, predicted = torch.max(output, 1)
+
+    # Print the results
+    print("Prediction for example {} is: {}".format(i, predicted.item()))
+    print("Actual label is: {}".format(label))
 
 ##########################################################
 #######################SAVE MODEL#########################
 ##########################################################
 # save the trained model weights and bias for transfer using:
-torch.save(model.state_dict(), 'cnn_model_weights.pth')
+#torch.save(model.state_dict(), 'cnn_model_weights.pth')
 
 # save the model architecture, including its weights and bias
-torch.save(model, 'cnn_model.pth')
+#torch.save(model, 'cnn_model.pth')
