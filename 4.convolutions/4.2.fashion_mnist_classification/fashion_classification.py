@@ -17,14 +17,6 @@ mean = 0.2860
 std = 0.3530
 
 # transformation of data
-# Transformations can include data augmentation techniques such as
-#  random cropping or flipping, or normalization techniques such as 
-# scaling or mean subtraction. If not specified, the default transform is to convert 
-# the images to tensors and normalize them to the range [0, 1]
-
-# NORMALIZATION PROCESS
-# input[channel] = (input[channel] - mean(channel)) / standard deviation
-
 transform = transforms.Compose([
 #    transforms.RandomCrop(size=14),
 #    transforms.RandomRotation(degrees=90), # randomly rotate the images by up to 20 degrees
@@ -108,12 +100,6 @@ class CNN(nn.Module):
         # conv layer with batch norm and ReLU activation
         self.conv1 = nn.Sequential(  
             # Convolutional layer with 1 input channel, 8 output channels, and 3x3 kernel size
-            # if image was RBG input would be 3
-            # pad image to keep original size calculated as
-                #(kernal_size -1)\2
-            #[(input_size - filter_size + 2(padding) / stride) +1] --> 
-            # [(28-3+2(1)/1)+1] = 28 (padding type is same)
-            # input size = output size
             nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding=1), 
             # Batch normalization layer for 8 channels
             nn.BatchNorm2d(8),
@@ -122,15 +108,10 @@ class CNN(nn.Module):
         )
 
         # max pooling layer with 2x2 kernel size
-        # output sizeof image should decrease after maxpooling
-        # (input_size - kernel_size)/stride) + 1 -->
-        # (28 - 2) / 2) + 1 = 14
         self.pool1 = nn.MaxPool2d(kernel_size=2)  
         # conv layer with batch norm and ReLU activation
         self.conv2 = nn.Sequential(  
             # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
-            # image output size output_size = ((28 - 5 + 24) / 1) + 1
-            # 28
             nn.Conv2d(in_channels=8, out_channels=32, kernel_size=5, padding=2),  
             # Batch normalization layer for 32 channels
             nn.BatchNorm2d(32),
@@ -139,8 +120,6 @@ class CNN(nn.Module):
         )
 
         # Define the second max pooling layer with 2x2 kernel size
-        # second maxpool will reduce image size to 7x7
-        # (14 - 2)/2 + 1 = 7
         self.pool2 = nn.MaxPool2d(kernel_size=2)
         # fully connected layer input size of 32*5*5 and output size of 600
         self.fc1 = nn.Linear(in_features=(32 * 7 * 7), 
@@ -297,7 +276,12 @@ for epoch in range(num_epochs):
                 break
 
     # print training and testing loss and accuracy
-    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.2f}%, Test Loss: {avg_test_loss:.4f}, Test Accuracy: {avg_test_accuracy:.2f}%")
+    print(f"Epoch [{epoch+1}/{num_epochs}], \
+          Train Loss: {avg_train_loss:.4f}, \
+          Train Accuracy: {avg_train_accuracy:.2f}%, \
+          Test Loss: {avg_test_loss:.4f}, \
+          Test Accuracy: {avg_test_accuracy:.2f}%"
+          )
 
     # check for early stopping before starting the next epoch
     if early_stopping_counter >= patience:
@@ -369,8 +353,8 @@ for i in indices:
     _, predicted = torch.max(output, 1)
 
     # Print the results
-    print("Prediction for example {} is: {}".format(i, predicted.item()))
-    print("Actual label is: {}".format(label))
+    print(f"Prediction for example {i} is: {predicted.item()}")
+    print(f"Actual label is: {label}")
 
 ##########################################################
 #######################SAVE MODEL#########################
