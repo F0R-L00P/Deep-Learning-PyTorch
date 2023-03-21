@@ -18,9 +18,6 @@ std = 0.3530
 
 # transformation of data
 transform = transforms.Compose([
-#    transforms.RandomCrop(size=14),
-#    transforms.RandomRotation(degrees=90), # randomly rotate the images by up to 20 degrees
-#    transforms.RandomHorizontalFlip(p=0.3),# randomly flip the images horizontally with a probability of 0.3
     transforms.ToTensor(),                 # convert images to tensors
     transforms.Normalize((mean,), (std,))  # normalize the tensor with mean and standard deviation
                                 ])
@@ -93,6 +90,26 @@ print(f'Train Loader: {len(train_loader)} | Test Loader: {len(test_loader)}')
 
 #########################################################
 ##################### DEFINE MODEL ######################
+#########################################################
+#######CNN architecture with Squeez-Excite-Layer#########
+#########################################################
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
+    
 class CNN(nn.Module):
     def __init__(self):
         # build constructor-parent class nn.Module
@@ -104,27 +121,44 @@ class CNN(nn.Module):
             # Batch normalization layer for 8 channels
             nn.BatchNorm2d(8),
             # ReLU activation layer
-            nn.ReLU(),  
+            nn.ReLU()
         )
 
         # max pooling layer with 2x2 kernel size
         self.pool1 = nn.MaxPool2d(kernel_size=2)  
+
         # conv layer with batch norm and ReLU activation
         self.conv2 = nn.Sequential(  
             # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
-            nn.Conv2d(in_channels=8, out_channels=32, kernel_size=5, padding=2),  
+            nn.Conv2d(in_channels=8, out_channels=32, kernel_size=3, padding=1),  
             # Batch normalization layer for 32 channels
             nn.BatchNorm2d(32),
             # ReLU activation layer
-            nn.ReLU(),  
+            nn.ReLU(),
+            SELayer(channel=32)
         )
 
         # Define the second max pooling layer with 2x2 kernel size
         self.pool2 = nn.MaxPool2d(kernel_size=2)
+
+        # conv layer with batch norm and ReLU activation
+        self.conv3 = nn.Sequential(  
+            # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, padding=2),  
+            # Batch normalization layer for 32 channels
+            nn.BatchNorm2d(64),
+            # ReLU activation layer
+            nn.ReLU(),
+            SELayer(channel=64)
+        )
+
+        # Define the second max pooling layer with 2x2 kernel size
+        self.pool3 = nn.MaxPool2d(kernel_size=2)
+        
         # fully connected layer input size of 32*5*5 and output size of 600
-        self.fc1 = nn.Linear(in_features=(32 * 7 * 7), 
-                             out_features=600)
-        self.dropout = nn.Dropout(p=0.5)
+        self.fc1 = nn.Linear(in_features=(64 * 3 * 3), 
+                                    out_features=600)
+        self.dropout = nn.Dropout(p=0.6)
         # fully connected layer  600 * 5 * 5 input - 10 output
         self.fc2 = nn.Linear(in_features=600, 
                              out_features=10)  
@@ -134,9 +168,11 @@ class CNN(nn.Module):
         x = self.pool1(x)  # max pooling layer
         x = self.conv2(x)  # conv layer w batch norm and ReLU activation
         x = self.pool2(x)  # max pooling layer
+        x = self.conv3(x)
+        x = self.pool3(x)
         # Flatten the output of the second max pooling layer to a 1D tensor
         # can use explicit value using btach_size vs -1
-        x = x.view(-1, 32 * 7 * 7)  
+        x = x.view(-1, 64 * 3 * 3)
         x = self.fc1(x)  # fully connected layer
         x = self.dropout(x)
         x = self.fc2(x)  # fully connected layer
@@ -196,7 +232,7 @@ test_loss = []
 train_accuracy = []
 test_accuracy = []
 
-num_epochs = 10
+num_epochs = 15
 patience = 4  # number of epochs to wait before early stopping
 best_test_loss = np.inf
 best_model_params = None
@@ -310,7 +346,6 @@ def plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy):
     
     plt.tight_layout()
     plt.show()
-
 
 plot_metrics(train_loss, test_loss, train_accuracy, test_accuracy)
 ##########################################################
