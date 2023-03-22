@@ -186,7 +186,17 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ##########################################################
 num_epochs = 20
 patience = 3  # number of epochs to wait before early stopping
-def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_epochs=num_epochs, patience=patience):
+def train_evaluate(model, 
+                   train_loader, 
+                   test_loader, 
+                   criterion, 
+                   optimizer, 
+                   num_epochs=num_epochs, 
+                   patience=patience):
+    
+    # move model and optimizer to device
+    model.to(device)
+
     # initialize lists to store loss and accuracy
     train_loss = []
     test_loss = []
@@ -206,7 +216,7 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
         total = 0
         for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
             # move data and target to device
-            data, target = data.to(device), target.to(device)
+            data, target = data.clone().detach().requires_grad_(True).to(device), target.clone().detach().to(device)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -240,7 +250,7 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
             test_accs = []
             for batch_idx, (data, target) in enumerate(test_loader):
                 # move data and target to device
-                data, target = data.to(device), target.to(device)
+                data, target = data.clone().detach().requires_grad_(True).to(device), target.clone().detach().to(device)
 
                 # forward pass
                 outputs = model(data)
@@ -283,23 +293,7 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
             Test Accuracy: {avg_test_accuracy:.2f}%"
             )
 
-        # check for early stopping before starting the next epoch
-        if avg_test_loss < best_test_loss:
-                best_test_loss = avg_test_loss
-                best_model_params = model.state_dict()
-                early_stopping_counter = 0
-        else:
-            early_stopping_counter += 1
-            if early_stopping_counter >= patience:
-                print(f"Stopping early after {epoch+1} epochs.")
-                break
-
-        # check for early stopping before starting the next epoch
-        if early_stopping_counter >= patience:
-            break
-
     return train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy
-
 ##########################################################
 #####################HYPERPARAMETERS######################
 ##########################################################
@@ -327,11 +321,12 @@ for params in ParameterGrid(param_grid):
                 conv3_out_channels=params['conv3_out_channels'],
                 fc1_out_features=params['fc1_out_features'],
                 dropout=params['dropout'])
-
+    
+    model.to(device)
     # Set up the optimizer
     learning_rate = params['learning_rate']
-    if params['optimizer'] == 'SGD':
-        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    if params['optimizer'] == 'Adagrad':
+        optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
     elif params['optimizer'] == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -398,6 +393,7 @@ for i,(inputs,labels) in enumerate (train_loader):
     print(predicted) # provide prediction/batch -> 64 predictions
     correct += (predicted == labels).sum()
     break
+
 print(correct)
 
 ##########################################################
