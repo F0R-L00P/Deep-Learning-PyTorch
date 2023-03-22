@@ -148,8 +148,7 @@ class CNN(nn.Module):
             # Batch normalization layer for 32 channels
             nn.BatchNorm2d(64),
             # ReLU activation layer
-            nn.ReLU(),
-            SELayer(channel=64)
+            nn.ReLU()
         )
 
         # Define the second max pooling layer with 2x2 kernel size
@@ -198,8 +197,6 @@ print("Model's state_dict:")
 for param_tensor in model.state_dict():
     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
 
-# setup optimizer
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 ##########################################################
 ##########################################################
 ##########################################################
@@ -226,67 +223,41 @@ print(correct)
 ##########################################################
 ##################### model training######################
 ##########################################################
-# initialize lists to store loss and accuracy
-train_loss = []
-test_loss = []
-train_accuracy = []
-test_accuracy = []
-
 num_epochs = 15
-patience = 4  # number of epochs to wait before early stopping
-best_test_loss = np.inf
-best_model_params = None
-early_stopping_counter = 0
+patience = 3  # number of epochs to wait before early stopping
+def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_epochs=num_epochs, patience=patience):
+    # initialize lists to store loss and accuracy
+    train_loss = []
+    test_loss = []
+    train_accuracy = []
+    test_accuracy = []
 
-# train the model
-for epoch in range(num_epochs):
-    # training
-    model.train()
-    running_loss = 0.0
-    correct = 0
-    total = 0
-    for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
-        # move data and target to device
-        data, target = data.to(device), target.to(device)
+    best_test_loss = np.inf
+    best_model_params = None
+    early_stopping_counter = 0
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
 
-        # forward + backward + optimize
-        outputs = model(data)
-        loss = nn.CrossEntropyLoss()(outputs, target)
-        loss.backward()
-        optimizer.step()
-
-        # calculate training accuracy
-        _, predicted = torch.max(outputs.data, 1)
-        total += target.size(0)
-        correct += (predicted == target).sum().item()
-
-        # add current batch loss to running loss
-        running_loss += loss.item()
-
-    # calculate average training loss and accuracy for current epoch
-    avg_train_loss = running_loss / len(train_loader)
-    avg_train_accuracy = 100 * correct / total
-    train_loss.append(avg_train_loss)
-    train_accuracy.append(avg_train_accuracy)
-
-    # testing
-    model.eval()
-    running_loss = 0.0
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(test_loader):
+    # train the model
+    for epoch in range(num_epochs):
+        # training
+        model.train()
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
             # move data and target to device
             data, target = data.to(device), target.to(device)
 
-            # forward pass
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
             outputs = model(data)
             loss = nn.CrossEntropyLoss()(outputs, target)
+            loss.backward()
+            optimizer.step()
 
-            # calculate test accuracy
+            # calculate training accuracy
             _, predicted = torch.max(outputs.data, 1)
             total += target.size(0)
             correct += (predicted == target).sum().item()
@@ -294,34 +265,114 @@ for epoch in range(num_epochs):
             # add current batch loss to running loss
             running_loss += loss.item()
 
-        # calculate average test loss and accuracy for current epoch
-        avg_test_loss = running_loss / len(test_loader)
-        avg_test_accuracy = 100 * correct / total
-        test_loss.append(avg_test_loss)
-        test_accuracy.append(avg_test_accuracy)
+        # calculate average training loss and accuracy for current epoch
+        avg_train_loss = running_loss / len(train_loader)
+        avg_train_accuracy = 100 * correct / total
+        train_loss.append(avg_train_loss)
+        train_accuracy.append(avg_train_accuracy)
 
-        # check for early stopping
-        if avg_test_loss < best_test_loss:
-            best_test_loss = avg_test_loss
-            best_model_params = model.state_dict()
-            early_stopping_counter = 0
-        else:
-            early_stopping_counter += 1
-            if early_stopping_counter >= patience:
-                print(f"Stopping early after {epoch+1} epochs.")
-                break
+        # testing
+        model.eval()
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for batch_idx, (data, target) in enumerate(test_loader):
+                # move data and target to device
+                data, target = data.to(device), target.to(device)
 
-    # print training and testing loss and accuracy
-    print(f"Epoch [{epoch+1}/{num_epochs}], \
-          Train Loss: {avg_train_loss:.4f}, \
-          Train Accuracy: {avg_train_accuracy:.2f}%, \
-          Test Loss: {avg_test_loss:.4f}, \
-          Test Accuracy: {avg_test_accuracy:.2f}%"
-          )
+                # forward pass
+                outputs = model(data)
+                loss = nn.CrossEntropyLoss()(outputs, target)
 
-    # check for early stopping before starting the next epoch
-    if early_stopping_counter >= patience:
-        break
+                # calculate test accuracy
+                _, predicted = torch.max(outputs.data, 1)
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
+
+                # add current batch loss to running loss
+                running_loss += loss.item()
+
+            # calculate average test loss and accuracy for current epoch
+            avg_test_loss = running_loss / len(test_loader)
+            avg_test_accuracy = 100 * correct / total
+            test_loss.append(avg_test_loss)
+            test_accuracy.append(avg_test_accuracy)
+
+            # check for early stopping
+            if avg_test_loss < best_test_loss:
+                best_test_loss = avg_test_loss
+                best_model_params = model.state_dict()
+                early_stopping_counter = 0
+            else:
+                early_stopping_counter += 1
+                if early_stopping_counter >= patience:
+                    print(f"Stopping early after {epoch+1} epochs.")
+                    break
+
+        # print training and testing loss and accuracy
+        print(f"Epoch [{epoch+1}/{num_epochs}], \
+            Train Loss: {avg_train_loss:.4f}, \
+            Train Accuracy: {avg_train_accuracy:.2f}%, \
+            Test Loss: {avg_test_loss:.4f}, \
+            Test Accuracy: {avg_test_accuracy:.2f}%"
+            )
+
+        # check for early stopping before starting the next epoch
+        if early_stopping_counter >= patience:
+            break
+
+    return train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy
+
+##########################################################
+#####################HYPERPARAMETERS######################
+##########################################################
+from sklearn.model_selection import ParameterGrid
+# Perform grid search
+best_accuracy = 0
+best_params = None
+
+# Define hyperparameter search space
+param_grid = {
+    'conv1_out_channels': [8, 16],
+    'conv2_out_channels': [32, 64],
+    'conv3_out_channels': [64, 128],
+    'fc1_out_features': [600, 800],
+    'dropout': [0.5, 0.6],
+    'learning_rate': [1e-3, 1e-4],
+    'optimizer': ['SGD', 'Adam']
+}
+
+
+for params in ParameterGrid(param_grid):
+    # Create model with the current parameters
+    model = CNN(conv1_out_channels=params['conv1_out_channels'],
+                conv2_out_channels=params['conv2_out_channels'],
+                conv3_out_channels=params['conv3_out_channels'],
+                fc1_out_features=params['fc1_out_features'],
+                dropout=params['dropout'])
+
+    # Set up the optimizer
+    learning_rate = params['learning_rate']
+    if params['optimizer'] == 'SGD':
+        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    elif params['optimizer'] == 'Adam':
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    # Set up the loss function
+    criterion = nn.CrossEntropyLoss()
+
+    # Train and evaluate the model
+    # Train and evaluate your model
+    train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy = train_evaluate(model, train_loader, test_loader, criterion, optimizer)
+
+    # Update the best model if the accuracy is improved
+    if avg_test_accuracy > best_accuracy:
+        best_accuracy = avg_test_accuracy
+        best_params = params
+
+print("Best accuracy:", best_accuracy)
+print("Best parameters:", best_params)
 
 ##########################################################
 ##########################################################
