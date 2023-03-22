@@ -8,6 +8,7 @@ import random
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from sklearn.model_selection import ParameterGrid
 
 # Define the path where the dataset will be stored
 data_path = r'C:\Users\behna\OneDrive\Documents\GitHub\Pytorch\4.convolutions\4.2.fashion_mnist_classification\fashion_dataset'
@@ -111,15 +112,15 @@ class SELayer(nn.Module):
         return x * y.expand_as(x)
     
 class CNN(nn.Module):
-    def __init__(self):
+    def __init__(self, conv1_out_channels, conv2_out_channels, conv3_out_channels, fc1_out_features, dropout):
         # build constructor-parent class nn.Module
         super(CNN, self).__init__()  
         # conv layer with batch norm and ReLU activation
         self.conv1 = nn.Sequential(  
             # Convolutional layer with 1 input channel, 8 output channels, and 3x3 kernel size
-            nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding=1), 
+            nn.Conv2d(in_channels=1, out_channels=conv1_out_channels, kernel_size=3, padding=1), 
             # Batch normalization layer for 8 channels
-            nn.BatchNorm2d(8),
+            nn.BatchNorm2d(conv1_out_channels),
             # ReLU activation layer
             nn.ReLU()
         )
@@ -130,12 +131,12 @@ class CNN(nn.Module):
         # conv layer with batch norm and ReLU activation
         self.conv2 = nn.Sequential(  
             # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
-            nn.Conv2d(in_channels=8, out_channels=32, kernel_size=3, padding=1),  
+            nn.Conv2d(in_channels=conv1_out_channels, out_channels=conv2_out_channels, kernel_size=3, padding=1),  
             # Batch normalization layer for 32 channels
-            nn.BatchNorm2d(32),
+            nn.BatchNorm2d(conv2_out_channels),
             # ReLU activation layer
             nn.ReLU(),
-            SELayer(channel=32)
+            SELayer(channel=conv2_out_channels)
         )
 
         # Define the second max pooling layer with 2x2 kernel size
@@ -144,9 +145,9 @@ class CNN(nn.Module):
         # conv layer with batch norm and ReLU activation
         self.conv3 = nn.Sequential(  
             # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, padding=2),  
+            nn.Conv2d(in_channels=conv2_out_channels, out_channels=conv3_out_channels, kernel_size=5, padding=2),  
             # Batch normalization layer for 32 channels
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(conv3_out_channels),
             # ReLU activation layer
             nn.ReLU()
         )
@@ -155,11 +156,11 @@ class CNN(nn.Module):
         self.pool3 = nn.MaxPool2d(kernel_size=2)
         
         # fully connected layer input size of 32*5*5 and output size of 600
-        self.fc1 = nn.Linear(in_features=(64 * 3 * 3), 
-                                    out_features=600)
-        self.dropout = nn.Dropout(p=0.6)
+        self.fc1 = nn.Linear(in_features=(conv3_out_channels * 3 * 3), 
+                                    out_features=fc1_out_features)
+        self.dropout = nn.Dropout(p=dropout)
         # fully connected layer  600 * 5 * 5 input - 10 output
-        self.fc2 = nn.Linear(in_features=600, 
+        self.fc2 = nn.Linear(in_features=fc1_out_features, 
                              out_features=10)  
 
     def forward(self, x):
@@ -177,49 +178,9 @@ class CNN(nn.Module):
         x = self.fc2(x)  # fully connected layer
         return x
 
+
 # setup cuda process
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-# Create the model and optimizer
-model = CNN()
-
-# Move model to device
-model.to(device)
-# check model weight matrix from each layer
-x = torch.randn(1, 1, 28, 28)
-model(x)
-# check layer shapes and weight
-model.conv1[0].weight.shape
-
-# Print model's state_dict
-# provides weights and bias at each stage
-print("Model's state_dict:")
-for param_tensor in model.state_dict():
-    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-
-##########################################################
-##########################################################
-##########################################################
-#Understand what's happening before training
-iteration = 0
-correct = 0
-
-for i, (inputs,labels) in enumerate(train_loader):
-        
-    print("For one iteration, this is what happens:")
-    print("Input Shape:",inputs.shape)
-    print("Labels Shape:",labels.shape)
-    output = model(inputs)
-    print("Outputs Shape",output.shape)
-    _, predicted = torch.max(output, 1)
-    print("Predicted Shape",predicted.shape)
-    print("Predicted Tensor:")
-    print(predicted) # provide prediction/batch -> 64 predictions
-    correct += (predicted == labels).sum()
-    break
-
-print(correct)
-
 ##########################################################
 ##################### model training######################
 ##########################################################
@@ -322,12 +283,11 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
         if early_stopping_counter >= patience:
             break
 
-    return train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy
+    return train_loss, test_loss, train_accuracy, test_accuracy, (avg_test_accuracy,)
 
 ##########################################################
 #####################HYPERPARAMETERS######################
 ##########################################################
-from sklearn.model_selection import ParameterGrid
 # Perform grid search
 best_accuracy = 0
 best_params = None
@@ -345,6 +305,7 @@ param_grid = {
 
 
 for params in ParameterGrid(param_grid):
+    print("Current parameters:", params)
     # Create model with the current parameters
     model = CNN(conv1_out_channels=params['conv1_out_channels'],
                 conv2_out_channels=params['conv2_out_channels'],
@@ -360,11 +321,13 @@ for params in ParameterGrid(param_grid):
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Set up the loss function
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()   
 
     # Train and evaluate the model
     # Train and evaluate your model
-    train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy = train_evaluate(model, train_loader, test_loader, criterion, optimizer)
+    train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy = train_evaluate(
+        model, train_loader, test_loader, criterion, optimizer, num_epochs=num_epochs, patience=patience
+        )
 
     # Update the best model if the accuracy is improved
     if avg_test_accuracy > best_accuracy:
