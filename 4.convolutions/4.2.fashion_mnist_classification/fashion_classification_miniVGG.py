@@ -74,7 +74,7 @@ print(f'Label: {label}')
 
 # setup dataloader for training process
 # Create the DataLoader with batch size 64, shuffling
-batch_size = 100
+batch_size = 128
 train_loader = torch.utils.data.DataLoader(train_dataset, 
                                            batch_size=batch_size, 
                                            shuffle=True
@@ -92,100 +92,72 @@ print(f'Train Loader: {len(train_loader)} | Test Loader: {len(test_loader)}')
 #########################################################
 ##################### DEFINE MODEL ######################
 #########################################################
-#######CNN architecture with Squeez-Excite-Layer#########
+############CNN miniVGGNet architecture #################
 #########################################################
-class SELayer(nn.Module):
-    def __init__(self, channel, reduction=16):
-        super(SELayer, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Sequential(
-            nn.Linear(channel, channel // reduction, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Linear(channel // reduction, channel, bias=False),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        b, c, _, _ = x.size()
-        y = self.avg_pool(x).view(b, c)
-        y = self.fc(y).view(b, c, 1, 1)
-        return x * y.expand_as(x)
-    
-class CNN(nn.Module):
-    def __init__(self, conv1_out_channels, conv2_out_channels, conv3_out_channels, fc1_out_features, dropout):
+#VGGNet architecture proposed in the paper 
+# "Very Deep Convolutional Networks for Large-Scale Image Recognition" by 
+# Simonyan and Zisserman does not include batch normalization. 
+# However, I will modify the VGGNet architecture to include 
+# batch normalization layers to improve its performance.
+class MiniVGGNet(nn.Module):
+    def __init__(self, dropout, numn_classes = 10):
         # build constructor-parent class nn.Module
-        super(CNN, self).__init__()  
+        super(MiniVGGNet, self).__init__()  
         # conv layer with batch norm and ReLU activation
-        self.conv1 = nn.Sequential(  
-            # Convolutional layer with 1 input channel, 8 output channels, and 3x3 kernel size
-            nn.Conv2d(in_channels=1, out_channels=conv1_out_channels, kernel_size=3, padding=1), 
-            # Batch normalization layer for 8 channels
-            nn.BatchNorm2d(conv1_out_channels),
-            # ReLU activation layer
-            nn.ReLU()
-        )
-
-        # max pooling layer with 2x2 kernel size
-        self.pool1 = nn.MaxPool2d(kernel_size=2)  
-
-        # conv layer with batch norm and ReLU activation
-        self.conv2 = nn.Sequential(  
-            # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
-            nn.Conv2d(in_channels=conv1_out_channels, out_channels=conv2_out_channels, kernel_size=3, padding=1),  
+        self.conv_layer = nn.Sequential(  
+            # Convolutional layer with 1 input channel, 32 output channels, and 3x3 kernel size
+            nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
             # Batch normalization layer for 32 channels
-            nn.BatchNorm2d(conv2_out_channels),
+            nn.BatchNorm2d(32),
             # ReLU activation layer
-            nn.ReLU(),
-            SELayer(channel=conv2_out_channels)
-        )
-
-        # Define the second max pooling layer with 2x2 kernel size
-        self.pool2 = nn.MaxPool2d(kernel_size=2)
-
-        # conv layer with batch norm and ReLU activation
-        self.conv3 = nn.Sequential(  
-            # Convolutional layer with 8 input channels, 32 output channels, and 5x5 kernel
-            nn.Conv2d(in_channels=conv2_out_channels, out_channels=conv3_out_channels, kernel_size=5, padding=2),  
+            nn.ReLU(inplace=True),
+            # Convolutional layer with 1 input channel, 32 output channels, and 3x3 kernel size
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=1), 
             # Batch normalization layer for 32 channels
-            nn.BatchNorm2d(conv3_out_channels),
+            nn.BatchNorm2d(32),
             # ReLU activation layer
-            nn.ReLU()
-        )
+            nn.ReLU(inplace=True),
+            # max pooling layer with 2x2 kernel size
+            nn.MaxPool2d(kernel_size=2, stride=2),
 
-        # Define the second max pooling layer with 2x2 kernel size
-        self.pool3 = nn.MaxPool2d(kernel_size=2)
-        
+            # Convolutional layer with 1 input channel, 32 output channels, and 3x3 kernel size
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1), 
+            # Batch normalization layer for 64 channels
+            nn.BatchNorm2d(64),
+            # ReLU activation layer
+            nn.ReLU(inplace=True),
+            # Convolutional layer with 1 input channel, 32 output channels, and 3x3 kernel size
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1), 
+            # Batch normalization layer for 64 channels
+            nn.BatchNorm2d(64),
+            # ReLU activation layer
+            nn.ReLU(inplace=True),
+            # max pooling layer with 2x2 kernel size
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+    
         # fully connected layer input size of 32*5*5 and output size of 600
-        self.fc1 = nn.Linear(in_features=(conv3_out_channels * 3 * 3), 
-                                    out_features=fc1_out_features)
-        self.dropout = nn.Dropout(p=dropout)
-        # fully connected layer  600 * 5 * 5 input - 10 output
-        self.fc2 = nn.Linear(in_features=fc1_out_features, 
-                             out_features=10)  
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features=(64 * 7 * 7), out_features=512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),    
+            # fully connected layer  512 * 7 * 7 input - 10 output
+            nn.Linear(in_features=512, out_features=numn_classes) 
+        )
 
     def forward(self, x):
-        x = self.conv1(x)  # conv layer w batch norm and ReLU activation
-        x = self.pool1(x)  # max pooling layer
-        x = self.conv2(x)  # conv layer w batch norm and ReLU activation
-        x = self.pool2(x)  # max pooling layer
-        x = self.conv3(x)
-        x = self.pool3(x)
-        # Flatten the output of the second max pooling layer to a 1D tensor
-        # can use explicit value using btach_size vs -1
-        x = x.view(-1, 64 * 3 * 3)
-        x = self.fc1(x)  # fully connected layer
-        x = self.dropout(x)
-        x = self.fc2(x)  # fully connected layer
+        x = self.conv_layer(x)  # conv layer w batch norm and ReLU activation
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)  # fully connected layer
         return x
-
-
-# setup cuda process
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ##########################################################
 ##################### model training######################
 ##########################################################
-num_epochs = 20
-patience = 3  # number of epochs to wait before early stopping
+# setup cuda process
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+num_epochs = 40
+patience = 5  # number of epochs to wait before early stopping
 def train_evaluate(model, 
                    train_loader, 
                    test_loader, 
@@ -216,7 +188,8 @@ def train_evaluate(model,
         total = 0
         for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
             # move data and target to device
-            data, target = data.clone().detach().requires_grad_(True).to(device), target.clone().detach().to(device)
+            data = data.clone().detach().requires_grad_(True).to(device) 
+            target = target.clone().detach().to(device)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -250,7 +223,8 @@ def train_evaluate(model,
             test_accs = []
             for batch_idx, (data, target) in enumerate(test_loader):
                 # move data and target to device
-                data, target = data.clone().detach().requires_grad_(True).to(device), target.clone().detach().to(device)
+                data = data.clone().detach().requires_grad_(True).to(device) 
+                target = target.clone().detach().to(device)
 
                 # forward pass
                 outputs = model(data)
@@ -303,31 +277,23 @@ best_params = None
 
 # Define hyperparameter search space
 param_grid = {
-    'conv1_out_channels': [8, 16],
-    'conv2_out_channels': [32, 64],
-    'conv3_out_channels': [64, 128],
-    'fc1_out_features': [600, 800],
-    'dropout': [0.5, 0.6],
-    'learning_rate': [1e-3, 1e-4],
-    'optimizer': ['Adagrad', 'Adam']
+    'dropout': [0.5],
+    'learning_rate': [1e-3],
+    'optimizer': ['Adam']
 }
 
 
 for params in ParameterGrid(param_grid):
     print("Current parameters:", params)
     # Create model with the current parameters
-    model = CNN(conv1_out_channels=params['conv1_out_channels'],
-                conv2_out_channels=params['conv2_out_channels'],
-                conv3_out_channels=params['conv3_out_channels'],
-                fc1_out_features=params['fc1_out_features'],
-                dropout=params['dropout'])
+    model = MiniVGGNet(dropout=params['dropout'])
     
     model.to(device)
     # Set up the optimizer
     learning_rate = params['learning_rate']
-    if params['optimizer'] == 'Adagrad':
+    if params['optimizer'] == 'Adam':
         optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
-    elif params['optimizer'] == 'Adam':
+    if params['optimizer'] == 'AdamW':
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Set up the loss function
@@ -344,9 +310,8 @@ for params in ParameterGrid(param_grid):
         best_accuracy = avg_test_accuracy
         best_params = params
 
-print("Best accuracy:", best_accuracy)
-print("Best parameters:", best_params)
-
+print("Best accuracy:", best_accuracy) # 93.4
+print("Best parameters:", best_params) # {'dropout': 0.5, 'learning_rate': 0.001, 'optimizer': 'Adam'}
 ##########################################################
 ##########################################################
 ##########################################################
@@ -385,13 +350,13 @@ for i,(inputs,labels) in enumerate (train_loader):
     print("For one iteration, this is what happens:")
     print("Input Shape:",inputs.shape)
     print("Labels Shape:",labels.shape)
-    output = model(inputs)
+    output = model(inputs.cuda())
     print("Outputs Shape",output.shape)
-    _, predicted = torch.max(output, 1)
+    _, predicted = torch.max(output.cuda(), 1)
     print("Predicted Shape",predicted.shape)
     print("Predicted Tensor:")
     print(predicted) # provide prediction/batch -> 64 predictions
-    correct += (predicted == labels).sum()
+    correct += (predicted == labels.cuda()).sum()
     break
 
 print(correct)
@@ -409,8 +374,8 @@ for i in indices:
     label = test_dataset[i][1]
 
     # Make the prediction
-    output = model(img)
-    _, predicted = torch.max(output, 1)
+    output = model(img.cuda())
+    _, predicted = torch.max(output.cuda(), 1)
 
     # Print the results
     print(f"Prediction for example {i} is: {predicted.item()}")
