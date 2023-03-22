@@ -184,7 +184,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ##########################################################
 ##################### model training######################
 ##########################################################
-num_epochs = 15
+num_epochs = 20
 patience = 3  # number of epochs to wait before early stopping
 def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_epochs=num_epochs, patience=patience):
     # initialize lists to store loss and accuracy
@@ -196,7 +196,6 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
     best_test_loss = np.inf
     best_model_params = None
     early_stopping_counter = 0
-
 
     # train the model
     for epoch in range(num_epochs):
@@ -238,6 +237,7 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
         correct = 0
         total = 0
         with torch.no_grad():
+            test_accs = []
             for batch_idx, (data, target) in enumerate(test_loader):
                 # move data and target to device
                 data, target = data.to(device), target.to(device)
@@ -254,9 +254,13 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
                 # add current batch loss to running loss
                 running_loss += loss.item()
 
+                # calculate test accuracy for current batch
+                batch_acc = 100 * (predicted == target).sum().item() / target.size(0)
+                test_accs.append(batch_acc)
+
             # calculate average test loss and accuracy for current epoch
             avg_test_loss = running_loss / len(test_loader)
-            avg_test_accuracy = 100 * correct / total
+            avg_test_accuracy = sum(test_accs) / len(test_accs)
             test_loss.append(avg_test_loss)
             test_accuracy.append(avg_test_accuracy)
 
@@ -280,10 +284,21 @@ def train_evaluate(model, train_loader, test_loader, criterion, optimizer, num_e
             )
 
         # check for early stopping before starting the next epoch
+        if avg_test_loss < best_test_loss:
+                best_test_loss = avg_test_loss
+                best_model_params = model.state_dict()
+                early_stopping_counter = 0
+        else:
+            early_stopping_counter += 1
+            if early_stopping_counter >= patience:
+                print(f"Stopping early after {epoch+1} epochs.")
+                break
+
+        # check for early stopping before starting the next epoch
         if early_stopping_counter >= patience:
             break
 
-    return train_loss, test_loss, train_accuracy, test_accuracy, (avg_test_accuracy,)
+    return train_loss, test_loss, train_accuracy, test_accuracy, avg_test_accuracy
 
 ##########################################################
 #####################HYPERPARAMETERS######################
@@ -300,7 +315,7 @@ param_grid = {
     'fc1_out_features': [600, 800],
     'dropout': [0.5, 0.6],
     'learning_rate': [1e-3, 1e-4],
-    'optimizer': ['SGD', 'Adam']
+    'optimizer': ['Adagrad', 'Adam']
 }
 
 
