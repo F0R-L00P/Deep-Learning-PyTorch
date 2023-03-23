@@ -13,7 +13,7 @@ model.eval()
 
 
 # Load the image and apply transformations
-image_path = r'C:\Users\behna\OneDrive\Documents\GitHub\Pytorch\4.convolutions\image_files\2.png'
+image_path = r'C:\Users\OneDrive\Documents\GitHub\Pytorch\4.convolutions\image_files\2.png'
 image = Image.open(image_path).convert('L')  # convert to grayscale
 image = Image.eval(image, lambda x: 255 - x) # make background and writting colour same as training set
 transform = transforms.Compose([
