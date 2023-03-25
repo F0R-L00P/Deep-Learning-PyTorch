@@ -1,17 +1,14 @@
 import os
 import torch
 import torchvision
-import torch.optim
 import torch.nn as nn
+from tqdm import tqdm
 
-from torch.autograd import variable
+from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision import datasets, models, transforms
 
-import numpy as np
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 ##########################################################
 # use a powerful pretrained model i.e. AlexNet/ResNets?etc 
 # 1) freez all layers
@@ -89,10 +86,6 @@ print(resnet18.parameters)
 for param in resnet18.parameters():
     param.requires_grad = False
 
-# Set requires_grad to True for the fc layer
-for param in resnet18.fc.parameters():
-    param.requires_grad = True
-
 # check input features to the last layer (linear)
 # input & output
 print(resnet18.fc)
@@ -130,6 +123,10 @@ for inputs, labels in tqdm(train_loader, desc="Processing"):
 #################################################################
 #############################Training MODEL######################
 #################################################################
+# Set requires_grad to True for the fc layer
+for param in resnet18.fc.parameters():
+    param.requires_grad = True
+
 # Set up the criterion and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(resnet18.fc.parameters(), lr=0.001, momentum=0.9)
