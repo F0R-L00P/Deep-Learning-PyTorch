@@ -42,7 +42,7 @@ def main():
                                         ])
 
     # define path
-    data_path = "C:/Users/behna/OneDrive/Desktop/PYTHON VENV CODE/hymenoptera_data/hymenoptera_data"
+    data_path = "C:/Users/OneDrive/Desktop/PYTHON VENV CODE/hymenoptera_data/hymenoptera_data"
 
     # Load the images using ImageFolder class, and apply the transforms
     train_dataset = datasets.ImageFolder(os.path.join(data_path, "train"), transform=train_transform)
