@@ -52,7 +52,7 @@ print("Number of training images:", len(train_dataset))
 print("Number of validation images:", len(val_dataset))
 
 # load both training set and validation set in the dataloader class
-batch = 64
+batch = 32
 workers = 10
 
 train_loader = DataLoader(train_dataset,
@@ -80,7 +80,7 @@ val_loader = DataLoader(val_dataset,
 #################################################################
 #############################BUILD MODEL#########################
 #################################################################
-resnet18 = torchvision.models.resnet18(pretrained=True)
+resnet18 = torchvision.models.resnet18(weights=torchvision.models.resnet.ResNet18_Weights.IMAGENET1K_V1)
 
 # check model parametr and srchitecture
 print(resnet18.parameters)
@@ -115,7 +115,7 @@ if torch.cuda.is_available():
 # model output before training
 iteration = 0
 correct = 0
-for inputs, labels in train_loader:
+for inputs, labels in tqdm(train_loader, desc="Processing"):
     if iteration == 1:
         break
     if torch.cuda.is_available():
@@ -184,7 +184,7 @@ with torch.no_grad():
     running_loss = 0.0
     progress_bar = tqdm(enumerate(val_loader), total=len(val_loader), desc="Validation")
 
-    for i, (images, labels) in progress_bar
+    for i, (images, labels) in progress_bar:
         if torch.cuda.is_available():
             images = images.cuda()
             labels = labels.cuda()
