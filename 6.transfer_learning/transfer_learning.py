@@ -11,6 +11,7 @@ from torchvision import datasets, models, transforms
 
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 def main():
     ##########################################################
@@ -196,10 +197,8 @@ def main():
 
     print('Test Accuracy: {:.3f} %'.format(100 * correct / total))
 
-    import random
-    import numpy as np
-    import matplotlib.pyplot as plt
 
+    ###########################################################
     # Choose 10 random indices from the test dataset
     random_indices = random.sample(range(len(val_dataset)), 20)
     # Subset the test dataset using the 10 random indices
