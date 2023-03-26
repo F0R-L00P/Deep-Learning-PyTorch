@@ -138,16 +138,29 @@ for feature_map in outputs:
     processed.append(gray_scale.squeeze(0).data.cpu().numpy())
 
 # visualize the feature maps
+# will be used to display the feature maps
 fig = plt.figure(figsize=(30, 60))
 for i in range(len(processed)):
+    #adds a new subplot to the figure, with a grid of 8 rows and 4 columns
+    #specifies the position of the subplot within the grid
     view = fig.add_subplot(8, 4, i+1)
+    #displays the processed feature map at index i in the subplot
     image_plot = plt.imshow(processed[i])
+    #turn off the axis labels and ticks
     plt.axis('off')
 
+    #extracts the name of the layer that produced the feature map
     layer_name = names[i].split('(')[0]
+    #checks if the layer name contains parentheses 
+    # (indicating a layer that produced a feature map), 
+    # and is not a ReLU or pooling layer
     if '(' in names[i] and 'ReLU' not in layer_name and 'Pool' not in layer_name:
+        #extracts the input and output channel dimensions of the layer
         layer_channel = names[i].split('(')[1].split(',')
+        #checks if both the input and output channel 
+        # dimensions are available for the layer
         if len(layer_channel) >= 2:
+            #sets the title if both values available
             view.set_title(layer_name + f'\ninput: {layer_channel[0]}, output: {layer_channel[1]}', fontsize=30)
         else:
             view.set_title(layer_name, fontsize=30)
