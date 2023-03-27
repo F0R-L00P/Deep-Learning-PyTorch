@@ -43,11 +43,13 @@ def main():
                                         ])
 
     # define path
-    data_path = "C:/Users/OneDrive/Desktop/PYTHON VENV CODE/hymenoptera_data/hymenoptera_data"
+    path = os.getcwd()
+    file_name = "hymenoptera_data"
+    file_path = os.path.join(path, file_name)
 
     # Load the images using ImageFolder class, and apply the transforms
-    train_dataset = datasets.ImageFolder(os.path.join(data_path, "train"), transform=train_transform)
-    val_dataset = datasets.ImageFolder(os.path.join(data_path, "val"), transform=val_transform)
+    train_dataset = datasets.ImageFolder(os.path.join(file_path, "train"), transform=train_transform)
+    val_dataset = datasets.ImageFolder(os.path.join(file_path, "val"), transform=val_transform)
 
     # Print the number of images in each dataset
     print("Number of training images:", len(train_dataset))

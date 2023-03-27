@@ -8,7 +8,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # Define the path where the dataset will be stored
-data_path = r'C:\Users\OneDrive\Documents\GitHub\Pytorch\3.2.conv_pytorch_dataset'
+data_path = r'4.convolutions\4.1.mnist_classification\mnist_dataset'
 
 # pre-computed mean and std of mnist
 mean = 0.1307

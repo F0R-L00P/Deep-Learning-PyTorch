@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import ParameterGrid
 
 # Define the path where the dataset will be stored
-data_path = r'C:\Users\OneDrive\Documents\GitHub\Pytorch\4.convolutions\4.2.fashion_mnist_classification\fashion_dataset'
+data_path = r'4.convolutions\4.2.fashion_mnist_classification\fashion_dataset'
 
 # pre-computed mean and std of mnist
 mean = 0.2860

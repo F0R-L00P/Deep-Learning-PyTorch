@@ -4,6 +4,7 @@ import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+import os
 import random
 import numpy as np
 from tqdm import tqdm
@@ -11,7 +12,7 @@ import matplotlib.pyplot as plt
 
 
 # Define the path where the dataset will be stored
-data_path = r'C:\Users\OneDrive\Documents\GitHub\Pytorch\5.ResNets\CIFAR10_dataset'
+data_path = r'5.ResNets\CIFAR10_dataset'
 
 # transformation of data
 transform = transforms.Compose([

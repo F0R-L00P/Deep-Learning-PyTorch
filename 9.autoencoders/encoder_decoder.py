@@ -12,14 +12,14 @@ from tqdm import tqdm
 ###############################################################
 ###############################################################
 # get the current working directory
-cwd = os.getcwd()
+path = os.getcwd()
 
-train_dataset = torchvision.datasets.MNIST(root=cwd,
+train_dataset = torchvision.datasets.MNIST(root=path,
                                            train=True,
                                            transform=transforms.ToTensor(),
                                            download=True
                                         )
-test_dataset = torchvision.datasets.MNIST(root=cwd,
+test_dataset = torchvision.datasets.MNIST(root=path,
                                            train=False,
                                            transform=transforms.ToTensor(),
                                            download=True
@@ -69,34 +69,34 @@ class VAE(nn.Module):
     # encoder takes an input tensor x and maps it to the latent space, after hidden layer
     # returning two parameters: the mean (mu) and the log variance (log_var)
     def encode_hidden(self, x):
-        # Pass the input tensor `x` through the first fully connected layer `self.fc1` and apply
+        # Pass the input tensor x through the first fully connected layer self.fc1 and apply
         # the ReLU activation function. Return the resulting tensor.
         return F.relu(self.fc1(x))
 
     def encode_mean(self, hidden_output):
-        # Pass the hidden representation `h` through the fully connected layer `self.fc2_mean`
-        # to compute the mean `mu` of the approximate posterior distribution of the latent variables.
+        # Pass the hidden representation hidden_output through the fully connected layer self.fc2_mean
+        # to compute the mean mu of the approximate posterior distribution of the latent variables.
         # Return the resulting tensor.
         return self.fc2_mean(hidden_output)
     
     def encode_logvar(self, hidden_output):
-        # Pass the hidden representation `h` through the fully connected layer `self.fc2_logvar`
-        # to compute the log variance `log_var` of the approximate posterior distribution of the
+        # Pass the hidden representation hidden_output through the fully connected layer self.fc2_logvar
+        # to compute the log variance log_var of the approximate posterior distribution of the
         # latent variables. Return the resulting tensor.
         return self.fc2_logvar(hidden_output)
     
     # calling all encod methods
     def encode(self, x):
-        # Compute the hidden representation `h` by calling the 
-        # `encode_hidden()` method with input tensor `x`.
+        # Compute the hidden representation hidden_output by calling the 
+        # encode_hidden() method with input tensor x.
         hidden_output = self.encode_hidden(x)
-        # Calculate the mean `mu` of the approximate posterior distribution of the latent variables
-        # by calling the `encode_mean()` method with the hidden representation `h`.
+        # Calculate the mean mu of the approximate posterior distribution of the latent variables
+        # by calling the encode_mean() method with the hidden representation hidden_output.
         mu = self.encode_mean(hidden_output)
-        # Calculate the log variance `log_var` of the approximate posterior distribution of the latent
-        # variables by calling the `encode_logvar()` method with the hidden representation `h`.
+        # Calculate the log variance log_var of the approximate posterior distribution of the latent
+        # variables by calling the encode_logvar() method with the hidden representation hidden_output.
         log_var = self.encode_logvar(hidden_output)
-        # Return the mean `mu` and log variance `log_var`.
+        # Return the mean mu and log variance log_var.
         return mu, log_var
     
     def reparameterize(self, mu, logvar):
@@ -104,10 +104,10 @@ class VAE(nn.Module):
         # log variance and taking the square root.
         std = torch.exp(logvar / 2)
         # Sample a random noise tensor from the standard normal distribution 
-        # with the same shape as `std`.
+        # with the same shape as std.
         eps = torch.randn_like(std)
-        # Add the mean `mu` and the element-wise product of `std` and `eps` 
-        # to obtain the latent variable `z`.
+        # Add the mean mu and the element-wise product of std and eps 
+        # to obtain the latent variable z.
         return mu + eps * std
     
     def decode(self, z):
@@ -116,14 +116,14 @@ class VAE(nn.Module):
         return out
     
     def forward(self, x):
-        # Encode the input tensor `x` into the mean `mu` and log variance `log_var`.
+        # Encode the input tensor x into the mean mu and log variance log_var.
         mu, logvar = self.encode(x.view(-1, image_size))
-        # Reparameterize the distribution using the mean `mu` and log variance `log_var` 
-        # to obtain the latent variable `z`.
+        # Reparameterize the distribution using the mean mu and log variance log_var 
+        # to obtain the latent variable z.
         z = self.reparameterize(mu, logvar)
-        # Decode the latent variable `z` into the reconstructed output.
+        # Decode the latent variable z into the reconstructed output.
         reconstructed = self.decode(z)
-        # Return the reconstructed output, mean `mu`, and log variance `log_var`.
+        # Return the reconstructed output, mean mu, and log variance log_var.
         return reconstructed, mu, logvar
     
 ###################################################################
