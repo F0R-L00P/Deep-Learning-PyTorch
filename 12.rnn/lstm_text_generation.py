@@ -53,22 +53,36 @@ class TextPreprocessing:
         self.stop_words = set(stopwords.words('english'))
 
     def get_clean_text(self, document_path, batch_size=20):
-        punctuation = set(string.punctuation)
+        # Create a set of all punctuation characters to filter them out later
+        punctuation = set(string.punctuation)        
+        # Initialize an empty list to store the cleaned text
         cleaned_text = []
+        # Open the document file for reading
         with open(document_path, 'r') as txt_doc:
+            # Iterate through each line in the document
             for line in txt_doc:
+                # Check if the line is not empty or contains only whitespaces
                 if line.strip():
+                    # Remove punctuation characters from the line
                     line = line.translate(str.maketrans("", "", string.punctuation))
+                    # Convert the line to lowercase
                     line = line.lower()
-                    words = line.strip().split()
-                    words = [word for word in words if word not in self.stop_words]
+                    # Split the line into words
+                    words = line.strip().split()                    
+                    # Remove stop words from the list of words
+                    words = [word for word in words if word not in self.stop_words]                    
+                    # Add the cleaned words to the cleaned_text list
                     cleaned_text += words
-
+                    # Add the '<start>', words, and '<eos>' tokens to the dictionary
                     for word in ['<start>'] + words + ['<eos>']:
                         self.dictionary.add_word(word)
                 else:
-                    cleaned_text.append('<new_para>')
+                    # If the line is empty, add a '<new_para>' token to the cleaned_text list
+                    cleaned_text.append('<new_para>')                    
+                    # Add the '<new_para>' token to the dictionary
                     self.dictionary.add_word('<new_para>')
+        
+        # Return the updated dictionary object
         return self.dictionary
 
     def generate_tensor(self, path):
@@ -80,19 +94,15 @@ class TextPreprocessing:
                     line = line.translate(str.maketrans("", "", string.punctuation))
                     line = line.lower()
                     words = line.strip().split()
-
                     # Remove stop words
                     words = [word for word in words if word not in self.stop_words]
-
                     # Iterate over the preprocessed words
                     for word in words:
                         # Add the integer index of the word to the list, if it's in the dictionary
                         if word in self.dictionary.word2index:
                             index_list.append(self.dictionary.word2index[word])
-
                 # Add the '<eos>' token at the end of each line
                 index_list.append(self.dictionary.word2index['<eos>'])
-
         # Create a 1-D tensor from the list of integer indices
         rep_tensor = torch.LongTensor(index_list)
         return rep_tensor
@@ -105,10 +115,8 @@ class TextPreprocessing:
                 tokens += len(words)
                 for word in words: 
                     self.dictionary.add_word(word)  
-            
         # call the generate_tensor method to create the 1-D tensor
         rep_tensor = self.generate_tensor(path)
-
         #Find out how many batches we need            
         num_batches = rep_tensor.shape[0] // batch_size     
         #Remove the remainder (Filter out the ones that don't fit)
@@ -135,63 +143,4 @@ print(tensor_representation)
 #########################################################################
 #########################################################################
 #########################################################################
-
-
-
-
-
-
-
-
-
-
-import collections
-from torchtext.vocab import Vocab
-from torchtext.data.utils import get_tokenizer
-
-# Define special tokens
-PAD_TOKEN = '<PAD>'
-START_TOKEN = '<START>'
-END_TOKEN = '<END>'
-UNK_TOKEN = '<UNK>'
-COMMA_TOKEN = '<COMMA>'
-PERIOD_TOKEN = '<PERIOD>'
-EXCLAMATION_TOKEN = '<EXCLAMATION>'
-AT_TOKEN = '<AT>'
-HASH_TOKEN = '<HASH>'
-DOLLAR_TOKEN = '<DOLLAR>'
-PERCENT_TOKEN = '<PERCENT>'
-CARET_TOKEN = '<CARET>'
-AMPERSAND_TOKEN = '<AMPERSAND>'
-
-# Define tokenizer
-tokenizer = get_tokenizer('basic_english')
-
-# Define dictionary mapping special characters to special tokens
-special_tokens = {
-    ',': COMMA_TOKEN,
-    '.': PERIOD_TOKEN,
-    '!': EXCLAMATION_TOKEN,
-    '@': AT_TOKEN,
-    '#': HASH_TOKEN,
-    '$': DOLLAR_TOKEN,
-    '%': PERCENT_TOKEN,
-    '^': CARET_TOKEN,
-    '&': AMPERSAND_TOKEN
-}
-
-# Define preprocessing function to add special tokens
-def add_special_tokens(text):
-    tokens = tokenizer(text)
-    for i in range(len(tokens)):
-        if tokens[i] in special_tokens:
-            tokens[i] = special_tokens[tokens[i]]
-    return [START_TOKEN] + tokens + [END_TOKEN]
-
-# Define vocabulary
-tokens = []
-with open(full_path) as f:
-    for line in f:
-        tokens += add_special_tokens(line.strip())
-
-tokens
+len(dictionary.word2index)
