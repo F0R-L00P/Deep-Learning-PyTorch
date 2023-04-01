@@ -42,105 +42,115 @@ class Dictionary:
             # increment the index for the next word
             self.index += 1
             
-    def __len__(self):
-        # get number of vocab
-        return len(self.word2index)
-
-
 class TextPreprocessing:
     def __init__(self):
+        # Initialize the dictionary object
         self.dictionary = Dictionary()
-        self.stop_words = set(stopwords.words('english'))
-
-    def get_clean_text(self, document_path, batch_size=20):
-        # Create a set of all punctuation characters to filter them out later
-        punctuation = set(string.punctuation)        
-        # Initialize an empty list to store the cleaned text
-        cleaned_text = []
-        # Open the document file for reading
-        with open(document_path, 'r') as txt_doc:
-            # Iterate through each line in the document
-            for line in txt_doc:
-                # Check if the line is not empty or contains only whitespaces
-                if line.strip():
-                    # Remove punctuation characters from the line
-                    line = line.translate(str.maketrans("", "", string.punctuation))
-                    # Convert the line to lowercase
-                    line = line.lower()
-                    # Split the line into words
-                    words = line.strip().split()                    
-                    # Remove stop words from the list of words
-                    words = [word for word in words if word not in self.stop_words]                    
-                    # Add the cleaned words to the cleaned_text list
-                    cleaned_text += words
-                    # Add the '<start>', words, and '<eos>' tokens to the dictionary
-                    for word in ['<start>'] + words + ['<eos>']:
-                        self.dictionary.add_word(word)
-                else:
-                    # If the line is empty, add a '<new_para>' token to the cleaned_text list
-                    cleaned_text.append('<new_para>')                    
-                    # Add the '<new_para>' token to the dictionary
-                    self.dictionary.add_word('<new_para>')
-        
-        # Return the updated dictionary object
-        return self.dictionary
-
-    def generate_tensor(self, path):
-        index_list = []
-        with open(path, 'r') as f:
-            for line in f:
-                if line.strip():
-                    # Preprocess the text: remove punctuation and convert to lowercase
-                    line = line.translate(str.maketrans("", "", string.punctuation))
-                    line = line.lower()
-                    words = line.strip().split()
-                    # Remove stop words
-                    words = [word for word in words if word not in self.stop_words]
-                    # Iterate over the preprocessed words
-                    for word in words:
-                        # Add the integer index of the word to the list, if it's in the dictionary
-                        if word in self.dictionary.word2index:
-                            index_list.append(self.dictionary.word2index[word])
-                # Add the '<eos>' token at the end of each line
-                index_list.append(self.dictionary.word2index['<eos>'])
-        # Create a 1-D tensor from the list of integer indices
-        rep_tensor = torch.LongTensor(index_list)
-        return rep_tensor
 
     def get_data(self, path, batch_size=20):
+        # Read the text file and count the total number of tokens (words)
+        # while adding words to the dictionary
         with open(path, 'r') as f:
             tokens = 0
             for line in f:
                 words = line.split() + ['<eos>']
                 tokens += len(words)
-                for word in words: 
-                    self.dictionary.add_word(word)  
-        # call the generate_tensor method to create the 1-D tensor
-        rep_tensor = self.generate_tensor(path)
-        #Find out how many batches we need            
-        num_batches = rep_tensor.shape[0] // batch_size     
-        #Remove the remainder (Filter out the ones that don't fit)
-        rep_tensor = rep_tensor[:num_batches*batch_size]
-        # return (batch_size,num_batches)
-        rep_tensor = rep_tensor.view(batch_size, -1)
+                for word in words:
+                    self.dictionary.add_word(word)        
+        # Create a 1-D tensor to store the indices of the words in the file
+        rep_tensor = torch.LongTensor(tokens)
+        index = 0        
+        # Read the text file again and populate the tensor with word indices
+        with open(path, 'r') as f:
+            for line in f:
+                words = line.split() + ['<eos>']
+                for word in words:
+                    rep_tensor[index] = self.dictionary.word2index[word]
+                    index += 1        
+        # Calculate the number of batches based on the batch size
+        num_batches = rep_tensor.shape[0] // batch_size  
+        # Truncate the tensor to remove any extra tokens that don't fit in the last batch
+        rep_tensor = rep_tensor[:num_batches * batch_size]        
+        # Reshape the tensor to have dimensions (batch_size, num_batches)
+        rep_tensor = rep_tensor.view(batch_size, -1)        
+        # Return the reshaped tensor
         return rep_tensor
+
 
 #########################################################################    
 #########################################################################
 #########################################################################
-# Instantiate TextPreprocessing class
+# Create a TextPreprocessing object
 text_preprocessor = TextPreprocessing()
-# Preprocess the text file and build the dictionary
-dictionary = text_preprocessor.get_clean_text(full_path)
-# Generate tensor representation of the text
-tensor_representation = text_preprocessor.generate_tensor(full_path)
 
+# Use the get_data method to read the sample text file and create a tensor
+batch_size = 1
+tensor_data = text_preprocessor.get_data(full_path, batch_size)
+
+# Print the generated tensor
+print(tensor_data)
+
+# print vocab dictionary
 print("Dictionary:")
-print(dictionary.word2index)
+print("Vocabulary size:", len(text_preprocessor.dictionary.word2index))
+print(text_preprocessor.dictionary.word2index)
 
 print("\nTensor representation:")
-print(tensor_representation)
+print(tensor_data.shape)
+
 #########################################################################
 #########################################################################
 #########################################################################
-len(dictionary.word2index)
+# initalize class
+corpus = TextPreprocessing()
+
+# get tensor representation of the .txt file
+# to find the batch size, to process the sequence
+# assuming the sequence is 1000, and time step is 50
+# the batching of the sentence will be 1000 // 50 = 20
+# therefore the sequence will be processed 20 characters at a time
+tensor_data = corpus.get_data(full_path, batch_size)
+
+# tensor_data is the tensor that contains the index of all the words. 
+# Each row contains 662 words by at batch of 20
+print(tensor_data.shape)
+
+# obtain vocab size 
+vocab_size = len(corpus.dictionary)
+print(vocab_size)
+
+#########################################################################
+#########################################################################
+#########################################################################
+class TextGenerator(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim, num_layers=1):
+        super(TextGenerator, self).__init__()
+        # Define the embedding layer
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        # Define the LSTM layer
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers, batch_first=True)
+        # Define the linear layer
+        self.linear = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x, hidden):
+        # Pass the input through the embedding layer
+        x = self.embedding(x)
+        # Pass the embedded input through the LSTM layer
+        x, hidden = self.lstm(x, hidden)
+        # Reshape the output to be fed into the linear layer
+        x = x.contiguous().view(-1, x.shape[2])
+        # Pass the LSTM output through the linear layer
+        x = self.linear(x)
+        return x, hidden
+
+# setting parameters
+embed_size = 128    #Input features to the LSTM
+hidden_size = 1024  #Number of LSTM units
+num_layers = 1
+num_epochs = 20
+batch_size = 20
+timesteps = 30 # look at 30 previouse words to predict the next word
+learning_rate = 0.002
+
+# initalize class
+lstm_model = TextGenerator()
