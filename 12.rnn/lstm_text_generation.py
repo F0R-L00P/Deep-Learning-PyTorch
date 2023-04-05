@@ -84,7 +84,7 @@ class TextPreprocessing:
 text_preprocessor = TextPreprocessing()
 
 # Use the get_data method to read the sample text file and create a tensor
-batch_size = 1
+batch_size = 20
 tensor_data = text_preprocessor.get_data(full_path, batch_size)
 
 # Print the generated tensor

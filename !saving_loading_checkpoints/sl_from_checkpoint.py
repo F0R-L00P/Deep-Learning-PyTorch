@@ -26,3 +26,12 @@ loss = checkpoint['loss']
 model.eval()
 # If resume training, simply run from checkpoint
 model.train()
+
+
+
+
+######
+# GIT COMMITS ERROR
+
+#--># number of commits you are ahead of!
+# git reset --soft HEAD~# 

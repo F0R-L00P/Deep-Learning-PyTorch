@@ -7,7 +7,7 @@ import sys
 import cv2
 import numpy as np
 
-import tensorflowgit 
+import tensorflow
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
