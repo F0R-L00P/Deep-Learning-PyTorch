@@ -106,7 +106,7 @@ class VAE(nn.Module):
         eps = torch.randn_like(std)
         # Add the mean mu and the element-wise product of std and eps 
         # to obtain the latent variable z.
-        return mu + std * eps
+        return mu + eps * std
     
     def decode(self, z):
         hidden_output = F.relu(self.fc3(z))
