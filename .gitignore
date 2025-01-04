@@ -1,0 +1,69 @@
+# Logs and checkpoints
+*.log
+*.out
+*.err
+
+# Model weights and checkpoints
+*.ckpt
+*.pth
+*.pt
+*.h5
+*.onnx
+*.pb
+*.tflite
+checkpoints/
+weights/
+saved_models/
+models/
+
+# Dataset files
+*.csv
+*.tsv
+*.json
+*.zip
+*.tar.gz
+*.hdf5
+*.npy
+*.npz
+datasets/
+data/
+
+# Python compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+env/
+venv/
+ENV/
+.VENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Configuration files
+config.json
+*.yaml
+*.yml
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Environment files
+.env
+.env.*
+*.key
+*.pem
