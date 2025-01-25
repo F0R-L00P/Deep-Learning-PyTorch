@@ -25,6 +25,7 @@ models/
 *.hdf5
 *.npy
 *.npz
+*.png
 datasets/
 data/
 
