@@ -26,6 +26,7 @@ models/
 *.npy
 *.npz
 *.png
+*.pdf
 datasets/
 data/
 

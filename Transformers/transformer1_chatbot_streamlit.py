@@ -27,6 +27,7 @@ model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-large")
 # Initialize the chat history
 chat_history_ids = None
 
+
 # Define the Streamlit app
 def main():
     st.title("DialoGPT Chatbot")
@@ -36,18 +37,29 @@ def main():
 
     if user_input:
         # Encode the user input and add the end-of-sequence token
-        new_user_input_ids = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors='pt')
+        new_user_input_ids = tokenizer.encode(
+            user_input + tokenizer.eos_token, return_tensors="pt"
+        )
 
         # Append the user input tokens to the chat history
         global chat_history_ids
-        bot_input_ids = torch.cat([chat_history_ids, new_user_input_ids], dim=-1) if chat_history_ids is not None else new_user_input_ids
+        bot_input_ids = (
+            torch.cat([chat_history_ids, new_user_input_ids], dim=-1)
+            if chat_history_ids is not None
+            else new_user_input_ids
+        )
 
         # Generate a response to the chat history
-        chat_history_ids = model.generate(bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id)
+        chat_history_ids = model.generate(
+            bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id
+        )
 
         # Decode the generated response and display it to the user
-        bot_response = tokenizer.decode(chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
+        bot_response = tokenizer.decode(
+            chat_history_ids[:, bot_input_ids.shape[-1] :][0], skip_special_tokens=True
+        )
         st.text_area("DialoGPT:", value=bot_response)
+
 
 if __name__ == "__main__":
     main()
