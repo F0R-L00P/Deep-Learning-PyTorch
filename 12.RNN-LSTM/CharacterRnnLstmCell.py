@@ -16,7 +16,7 @@ torch.backends.cudnn.benchmark = False
 RANDOM_SEED = 123
 TEXT_PORTION_SIZE = 200
 NUM_ITER = 2000
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.002
 EMBEDDING_DIM = 100
 HIDDEN_DIM = 256
 BATCH_SIZE = 512
@@ -85,7 +85,7 @@ class CharLSTM(torch.nn.Module):
         super().__init__()
         self.embed = torch.nn.Embedding(len(chars), EMBEDDING_DIM)
         self.lstm = torch.nn.LSTM(
-            EMBEDDING_DIM, HIDDEN_DIM, batch_first=True, num_layers=8
+            EMBEDDING_DIM, HIDDEN_DIM, batch_first=True, num_layers=4
         )
         self.fc = torch.nn.Linear(HIDDEN_DIM, len(chars))
 
