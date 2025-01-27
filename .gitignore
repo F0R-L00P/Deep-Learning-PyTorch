@@ -27,6 +27,8 @@ models/
 *.npz
 *.png
 *.pdf
+*.txt
+*.gz
 datasets/
 data/
 
