@@ -15,8 +15,8 @@ torch.backends.cudnn.benchmark = False
 # Hyperparameters
 RANDOM_SEED = 123
 TEXT_PORTION_SIZE = 200
-NUM_ITER = 100000
-LEARNING_RATE = 0.005
+NUM_ITER = 2000
+LEARNING_RATE = 0.001
 EMBEDDING_DIM = 100
 HIDDEN_DIM = 256
 BATCH_SIZE = 512
@@ -85,7 +85,7 @@ class CharLSTM(torch.nn.Module):
         super().__init__()
         self.embed = torch.nn.Embedding(len(chars), EMBEDDING_DIM)
         self.lstm = torch.nn.LSTM(
-            EMBEDDING_DIM, HIDDEN_DIM, batch_first=True, num_layers=2
+            EMBEDDING_DIM, HIDDEN_DIM, batch_first=True, num_layers=8
         )
         self.fc = torch.nn.Linear(HIDDEN_DIM, len(chars))
 
@@ -111,58 +111,65 @@ def train():
     model.train()
     total_loss = 0
     start_time = time.time()
-    all_losses = []  # <-- For storing loss values
+    loss_history = []
+    iteration = 0
+    target_iterations = NUM_ITER
 
-    for batch_idx, (data, targets) in enumerate(dataloader):
-        if batch_idx >= NUM_ITER // BATCH_SIZE:
-            break
+    # Keep looping until we hit the total number of iterations
+    while iteration < target_iterations:
+        for data, targets in dataloader:
+            if iteration >= target_iterations:
+                break
 
-        # Automatic Mixed Precision
-        with torch.cuda.amp.autocast():
-            outputs, _ = model(data)
-            loss = torch.nn.functional.cross_entropy(
-                outputs.view(-1, len(chars)), targets.view(-1)
-            )
+            with torch.amp.autocast("cuda"):
+                outputs, _ = model(data)
+                loss = torch.nn.functional.cross_entropy(
+                    outputs.view(-1, len(chars)), targets.view(-1)
+                )
 
-        optimizer.zero_grad()
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+            optimizer.zero_grad()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
-        # Store loss for plotting
-        all_losses.append(loss.item())
-        total_loss += loss.item()
+            current_loss_val = loss.item()
+            loss_history.append(current_loss_val)
+            total_loss += current_loss_val
 
-        # Logging
-        if batch_idx % LOG_INTERVAL == 0 and batch_idx > 0:
-            cur_loss = total_loss / LOG_INTERVAL
-            elapsed = time.time() - start_time
-            print(
-                f"| Batch {batch_idx:5d} | "
-                f"lr {LEARNING_RATE:.4f} | "
-                f"ms/batch {elapsed * 1000 / LOG_INTERVAL:5.2f} | "
-                f"loss {cur_loss:5.2f}"
-            )
-            total_loss = 0
-            start_time = time.time()
+            # Logging
+            if iteration % LOG_INTERVAL == 0 and iteration > 0:
+                avg_loss = total_loss / LOG_INTERVAL
+                elapsed = time.time() - start_time
+                print(
+                    f"| Iteration {iteration:5d} | "
+                    f"lr {LEARNING_RATE:.4f} | "
+                    f"ms/iteration {elapsed * 1000 / LOG_INTERVAL:5.2f} | "
+                    f"loss {avg_loss:5.2f}"
+                )
+                total_loss = 0
+                start_time = time.time()
 
-    return all_losses
+            iteration += 1
+
+    return loss_history
 
 
 # --------------------------------------------------
-#              Run Training + Visualization
+#             Run Training + Visualization
 # --------------------------------------------------
-loss_history = train()
+losses = train()
 torch.save(model.state_dict(), "lstm_final.pt")
 
-# --- Plot Loss History ---
-plt.figure(figsize=(6, 4))
-plt.plot(loss_history, label="Training Loss")
-plt.xlabel("Batch Iteration")
-plt.ylabel("Cross Entropy Loss")
-plt.title("LSTM Training Loss")
+# Plotting the recorded losses
+plt.figure(figsize=(8, 5))
+plt.plot(losses, label="Training Loss")
+plt.xlabel("Iteration (batch)")
+plt.ylabel("Cross-Entropy Loss")
+plt.title("Training Loss over Iterations")
 plt.legend()
 plt.show()
+
+# --------------------------------------------------
 
 
 # --- Sample from the Model ---
@@ -220,5 +227,5 @@ def generate_text(model, start_str="<START>", length=200):
 
 
 # Generate text from the model
-output = generate_text(model, start_str="COVID-19", length=200)
+output = generate_text(model, start_str="Lung", length=200)
 print(output)
